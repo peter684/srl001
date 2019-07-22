@@ -2,16 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:srl001/services/authentication.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:srl001/models/todo.dart';
-import 'package:srl001/services/emailverification.dart';
-import 'dart:async';
 
 class HomePage extends StatefulWidget {
-  HomePage({Key key, this.authenticator, this.userId, this.onSignedOut})
+  HomePage({Key key, this.authenticator, this.rootPageState})
       : super(key: key);
 
   final Authenticator authenticator;
-  final VoidCallback onSignedOut;
-  final String userId;
+  final State rootPageState;
+
 
   @override
   State<StatefulWidget> createState() => new _HomePageState();
@@ -20,28 +18,27 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
-  bool _isEmailVerified = false;
+
 
   Widget _buildBody(BuildContext context) {
     return StreamBuilder<QuerySnapshot>(
         stream: Firestore.instance.collection('todo').snapshots(),
         builder: (context, snapshot) {
           if (!snapshot.hasData) return LinearProgressIndicator();
-
           return _buildList(context, snapshot.data.documents);
         }
     );
   }
 
-  Widget _buildList(BuildContext context, List<DocumentSnapshot> snapshot) {
+  Widget _buildList(BuildContext context, List<DocumentSnapshot> documents) {
     return ListView(
       padding: const EdgeInsets.only(top: 20.0),
-      children: snapshot.map((data) => _buildListItem(context, data)).toList(),
+      children: documents.map((doc) => _buildListItem(context, doc)).toList(),
     );
   }
 
-  Widget _buildListItem(BuildContext context, DocumentSnapshot data) {
-    final record = Todo.fromSnapshot(data);
+  Widget _buildListItem(BuildContext context, DocumentSnapshot doc) {
+    final record = Todo.fromDocumentSnapshot(doc);
     return Padding(
       key: ValueKey(record.subject),
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
@@ -55,8 +52,7 @@ class _HomePageState extends State<HomePage> {
           trailing: Checkbox(value: record.completed, onChanged: null,),
           onTap: () => Firestore.instance.runTransaction((transaction) async {
             final freshSnapshot = await transaction.get(record.reference);
-            final fresh = Todo.fromSnapshot(freshSnapshot);
-
+            final fresh = Todo.fromDocumentSnapshot(freshSnapshot);
             await transaction
                 .update(record.reference, {'completed': !fresh.completed});
           }),
@@ -66,89 +62,20 @@ class _HomePageState extends State<HomePage> {
   }
 
 
-  @override
-  void initState() {
-    super.initState();
-    _checkEmailVerification();
-
-  }
-
-  void _checkEmailVerification() async {
-    _isEmailVerified = await widget.authenticator.isEmailVerified();
-    if (!_isEmailVerified) {
-      _showVerifyEmailDialog();
-    }
-  }
-
-  void _resendVerifyEmail(){
-    widget.authenticator.sendEmailVerification();
-    _showVerifyEmailSentDialog();
-  }
-
-  void _showVerifyEmailDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        // return object of type Dialog
-        return AlertDialog(
-          title: new Text("Verify your account"),
-          content: new Text("Please verify account in the link sent to email"),
-          actions: <Widget>[
-            new FlatButton(
-              child: new Text("Resend link"),
-              onPressed: () {
-                Navigator.of(context).pop();
-                _resendVerifyEmail();
-              },
-            ),
-            new FlatButton(
-              child: new Text("Dismiss"),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _showVerifyEmailSentDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        // return object of type Dialog
-        return AlertDialog(
-          title: new Text("Verify your account"),
-          content: new Text("Link to verify account has been sent to your email"),
-          actions: <Widget>[
-            new FlatButton(
-              child: new Text("Dismiss"),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
-  }
-
    _signOut() async {
     try {
       await widget.authenticator.signOut();
-      widget.onSignedOut();
+      widget.rootPageState.setState(() {
+        var s = widget.authenticator.authStatus.toString()+' '+widget.authenticator.userId;
+        print(" signed out: auth.status: $s");
+      });
+
     } catch (e) {
       print(e);
     }
   }
 
-  void _showTodoList() {
+  void _showAlertDialog() {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -169,7 +96,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-
   @override
   Widget build(BuildContext context) {
     return new Scaffold(
@@ -185,7 +111,7 @@ class _HomePageState extends State<HomePage> {
         body: _buildBody(context),
         floatingActionButton: FloatingActionButton(
           onPressed: () {
-            _showTodoList();
+            _showAlertDialog();
           },
           tooltip: 'Increment',
           child: Icon(Icons.add),

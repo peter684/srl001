@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:srl001/pages/login_signup_page.dart';
 import 'package:srl001/services/authentication.dart';
 import 'package:srl001/pages/home_page.dart';
+import 'package:srl001/pages/home.dart';
 
 class RootPage extends StatefulWidget {
   RootPage({this.authenticator});
@@ -12,48 +13,35 @@ class RootPage extends StatefulWidget {
   State<StatefulWidget> createState() => new _RootPageState();
 }
 
-enum AuthStatus {
-  NOT_DETERMINED, //e.g. firestore unreacheable
-  NOT_LOGGED_IN,
-  LOGGED_IN,
-  REGISTERED,
-}
-
 class _RootPageState extends State<RootPage> {
-  AuthStatus authStatus = AuthStatus.NOT_DETERMINED;
-  String _userId = "";
-
+  Authenticator auth;
   @override
   void initState() {
     super.initState();
-    widget.authenticator.getCurrentUser().then((user) {
+    auth = widget.authenticator;
+    auth.authStatus = AuthStatus.NOT_DETERMINED;
+    auth.userId = "";
+    auth.getCurrentUser().then((user) {
       setState(() {
         if (user != null) {
-          _userId = user?.uid;
+         auth.userId = user?.uid;
         }
-        authStatus =
+        auth.authStatus =
             user?.uid == null ? AuthStatus.NOT_LOGGED_IN : AuthStatus.LOGGED_IN;
+        auth.userId=user.uid.toString();
       });
     });
   }
 
   void _onLoggedIn() {
-    widget.authenticator.getCurrentUser().then((user){
+    auth.getCurrentUser().then((user) {
       setState(() {
-        _userId = user.uid.toString();
+        auth.userId = user.uid.toString();
+        auth.authStatus = AuthStatus.LOGGED_IN;
       });
-    });
-    setState(() {
-      authStatus = AuthStatus.LOGGED_IN;
     });
   }
 
-  void _onSignedOut() {
-    setState(() {
-      authStatus = AuthStatus.NOT_LOGGED_IN;
-      _userId = "";
-    });
-  }
 
   Widget _buildWaitingScreen() {
     return Scaffold(
@@ -66,24 +54,26 @@ class _RootPageState extends State<RootPage> {
 
   @override
   Widget build(BuildContext context) {
-    switch (authStatus) {
+    switch (auth.authStatus) {
       case AuthStatus.NOT_DETERMINED:
         return _buildWaitingScreen();
         break;
       case AuthStatus.NOT_LOGGED_IN:
         return new LoginSignUpPage(
-          authenticator: widget.authenticator,
-          onSignedIn: _onLoggedIn,
+          authenticator: auth,
+          rootPageState: this,
         );
         break;
       case AuthStatus.LOGGED_IN:
-        if (_userId.length > 0 && _userId != null) {
-          return new HomePage(
-            userId: _userId,
-            authenticator: widget.authenticator,
-            onSignedOut: _onSignedOut,
-          );
-        } else return _buildWaitingScreen();
+        if (auth.userId.length > 0 &&
+            auth.userId != null) {
+          //return new HomePage(
+          //  authenticator: auth,
+          //  rootPageState: this,
+          //);
+          return Home();
+        } else
+          return _buildWaitingScreen();
         break;
       default:
         return _buildWaitingScreen();

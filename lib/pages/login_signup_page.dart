@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:srl001/services/authentication.dart';
 
 class LoginSignUpPage extends StatefulWidget {
-  LoginSignUpPage({this.authenticator, this.onSignedIn});
-
+ // LoginSignUpPage({this.authenticator, this.onSignedIn});
+  LoginSignUpPage({this.authenticator, this.rootPageState});
   final Authenticator authenticator;
-  final VoidCallback onSignedIn;
+  final State rootPageState;
+ // final VoidCallback onSignedIn;
 
   @override
   State<StatefulWidget> createState() => new _LoginSignUpPageState();
@@ -24,6 +25,7 @@ class _LoginSignUpPageState extends State<LoginSignUpPage> {
   FormMode _formMode = FormMode.LOGIN;
   bool _isIos;
   bool _isLoading;
+  bool _isEmailVerified=false;
 
   // Check if form is valid before perform login or signup
   bool _validateAndSave() {
@@ -46,19 +48,30 @@ class _LoginSignUpPageState extends State<LoginSignUpPage> {
       try {
         if (_formMode == FormMode.LOGIN) {
           userId = await widget.authenticator.signIn(_email, _password);
-          print('Signed in: $userId');
+          print('Signed in: $_email, user id:$userId');
+          _isEmailVerified = await widget.authenticator.isEmailVerified();
+          if (!_isEmailVerified) {
+            _showVerifyEmailDialog();
+            userId="";//to signify user has not yet verified email
+          }
+          print('email verified: $_isEmailVerified');
+
         } else {
           userId = await widget.authenticator.signUp(_email, _password);
           widget.authenticator.sendEmailVerification();
           _showVerifyEmailSentDialog();
           print('Signed up user: $userId');
         }
+        widget.rootPageState.setState((){_isLoading=false;});//force 'parent' to redraw
+
         setState(() {
-          _isLoading = false;
+          _isLoading=false;
         });
 
         if (userId != null && userId.length > 0 && _formMode == FormMode.LOGIN) {
-          widget.onSignedIn();
+          //widget.onSignedIn();
+          widget.authenticator.authStatus=AuthStatus.LOGGED_IN;
+          print("authenticator status: logged in");
         }
 
       } catch (e) {
@@ -74,6 +87,60 @@ class _LoginSignUpPageState extends State<LoginSignUpPage> {
     }
   }
 
+
+  void _resendVerifyEmail(){
+    widget.authenticator.sendEmailVerification();
+    _showVerifyEmailSentDialog();
+  }
+
+  void _showVerifyEmailSentDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        // return object of type Dialog
+        return AlertDialog(
+          title: new Text("Verify your account"),
+          content: new Text("Link to verify account has been sent to your email"),
+          actions: <Widget>[
+            new FlatButton(
+              child: new Text("Dismiss"),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showVerifyEmailDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        // return object of type Dialog
+        return AlertDialog(
+          title: new Text("Verify your account"),
+          content: new Text("Please verify account in the link sent to email"),
+          actions: <Widget>[
+            new FlatButton(
+              child: new Text("Resend link"),
+              onPressed: () {
+                Navigator.of(context).pop();
+                _resendVerifyEmail();
+              },
+            ),
+            new FlatButton(
+              child: new Text("Dismiss"),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   void initState() {
@@ -118,28 +185,6 @@ class _LoginSignUpPageState extends State<LoginSignUpPage> {
       return Center(child: CircularProgressIndicator());
     } return Container(height: 0.0, width: 0.0,);
 
-  }
-
-  void _showVerifyEmailSentDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        // return object of type Dialog
-        return AlertDialog(
-          title: new Text("Verify your account"),
-          content: new Text("Link to verify account has been sent to your email"),
-          actions: <Widget>[
-            new FlatButton(
-              child: new Text("Dismiss"),
-              onPressed: () {
-                _changeFormToLogin();
-                Navigator.of(context).pop();
-              },
-            ),
-          ],
-        );
-      },
-    );
   }
 
   Widget _showBody(){

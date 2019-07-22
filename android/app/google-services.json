@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "746295808566",
+    "firebase_url": "https://selfregulatedlearning-app.firebaseio.com",
+    "project_id": "selfregulatedlearning-app",
+    "storage_bucket": "selfregulatedlearning-app.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:746295808566:android:d4ccb9f53a8c94b0",
+        "android_client_info": {
+          "package_name": "com.eds.srl001"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "746295808566-7g2nhvf3vr6v8lgl67uojqsr3drurekl.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBbc7I5Bda_t3gAVphc8Yezn6Q8ZU-_tDg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "746295808566-7g2nhvf3vr6v8lgl67uojqsr3drurekl.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -54,29 +54,30 @@ class _RootPageState extends State<RootPage> {
 
   @override
   Widget build(BuildContext context) {
-    switch (auth.authStatus) {
-      case AuthStatus.NOT_DETERMINED:
-        return _buildWaitingScreen();
-        break;
-      case AuthStatus.NOT_LOGGED_IN:
-        return new LoginSignUpPage(
-          authenticator: auth,
-          rootPageState: this,
-        );
-        break;
-      case AuthStatus.LOGGED_IN:
-        if (auth.userId.length > 0 &&
-            auth.userId != null) {
-          //return new HomePage(
-          //  authenticator: auth,
-          //  rootPageState: this,
-          //);
-          return Home();
-        } else
-          return _buildWaitingScreen();
-        break;
-      default:
-        return _buildWaitingScreen();
-    }
+    return Home();
+//    switch (auth.authStatus) {
+//      case AuthStatus.NOT_DETERMINED:
+//        return _buildWaitingScreen();
+//        break;
+//      case AuthStatus.NOT_LOGGED_IN:
+//        return new LoginSignUpPage(
+//          authenticator: auth,
+//          rootPageState: this,
+//        );
+//        break;
+//      case AuthStatus.LOGGED_IN:
+//        if (auth.userId.length > 0 &&
+//            auth.userId != null) {
+//          //return new HomePage(
+//          //  authenticator: auth,
+//          //  rootPageState: this,
+//          //);
+//          return Home();
+//        } else
+//          return _buildWaitingScreen();
+//        break;
+//      default:
+//        return _buildWaitingScreen();
+//   }
   }
 }

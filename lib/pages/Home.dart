@@ -155,8 +155,10 @@ class _Home extends State<StatefulWidget> {
 
   void clickWrite() async {
     if (_myContr.text.isNotEmpty) {
-      await Firestore.instance.collection('docs').document().setData(
-          {'text': _myContr.text}); //add new document with title 'text'
+      await Firestore.instance
+          .collection('docs')
+          .document()
+          .setData({'text': _myContr.text}); //add new document with title 'text'
 
       interact();
     }
@@ -206,14 +208,17 @@ class _Home extends State<StatefulWidget> {
           .getDocuments();
       setState(() {
         _queriedDocs = query.documents.length;
-        print ("found ${query.documents.length} hits");
       });
       interact();
+
     }
   }
 
-  void removeFromDb(itemID) {
-    Firestore.instance.collection('docs').document(itemID).delete();
+  void removeFromDb(itemID) async {
+    await Firestore.instance
+        .collection('docs')
+        .document(itemID)
+        .delete();
     interact();
   }
 
@@ -228,19 +233,17 @@ class _Home extends State<StatefulWidget> {
 
   void switchListener(isOn) async {
     bool switcher;
-    switch (isOn) {
-      case true:
-        switcher = true;
-        _listener = Firestore.instance
-            .collection('docs')
-            .snapshots()
-            .listen((data) => listenerUpdate(data));
-        break;
-      case false:
-        switcher = false;
-        await _listener.cancel();
-        break;
+    if (isOn) {
+      switcher=true;
+      _listener = Firestore.instance.collection('docs')
+      .snapshots()
+      .listen((data)=> listenerUpdate(data));
+   }
+    else {
+      switcher=false;
+      await _listener.cancel();
     }
+
     setState(() {
       _switchOnOff = switcher;
     });
@@ -272,3 +275,4 @@ class _Home extends State<StatefulWidget> {
     });
   }
 }
+

@@ -2,11 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:srl001/services/authentication.dart';
 
 class LoginSignUpPage extends StatefulWidget {
- // LoginSignUpPage({this.authenticator, this.onSignedIn});
-  LoginSignUpPage({this.authenticator, this.rootPageState});
-  final Authenticator authenticator;
-  final State rootPageState;
- // final VoidCallback onSignedIn;
+  LoginSignUpPage({@required this.onLogin, @required this.onSignup});
+
+  Function onLogin;
+  Function onSignup;
 
   @override
   State<StatefulWidget> createState() => new _LoginSignUpPageState();
@@ -44,35 +43,51 @@ class _LoginSignUpPageState extends State<LoginSignUpPage> {
       _isLoading = true;
     });
     if (_validateAndSave()) {
-      String userId = "";
       try {
         if (_formMode == FormMode.LOGIN) {
-          userId = await widget.authenticator.signIn(_email, _password);
-          print('Signed in: $_email, user id:$userId');
-          _isEmailVerified = await widget.authenticator.isEmailVerified();
-          if (!_isEmailVerified) {
-            _showVerifyEmailDialog();
-            userId="";//to signify user has not yet verified email
-          }
-          print('email verified: $_isEmailVerified');
+          AuthStatus status = await widget.onLogin(
+              email: _email,
+              password: _password); //let rootpage try to log the user in
 
-        } else {
-          userId = await widget.authenticator.signUp(_email, _password);
-          widget.authenticator.sendEmailVerification();
-          _showVerifyEmailSentDialog();
-          print('Signed up user: $userId');
+          switch (status) {
+            case AuthStatus.SIGNED_UP:
+            //user has previously signed up but email not yet verified
+              _showResendVerifyEmailDialog();
+              break;
+            case AuthStatus.NOT_DETERMINED:
+              break;
+            case AuthStatus.NOT_LOGGED_IN:
+              break;
+            case AuthStatus.LOGGED_IN:
+
+              break;
+            default:
+          }
         }
-        widget.rootPageState.setState((){_isLoading=false;});//force 'parent' to redraw
+        else{
+          AuthStatus status = await widget.onSignup(
+              email: _email,
+              password: _password); //let rootpage try to sign the user up
+          switch (status) {
+            case AuthStatus.SIGNED_UP:
+            //user has just signed up, show confirmation dialog
+              _showVerifyEmailSentDialog();
+              break;
+            case AuthStatus.NOT_DETERMINED:
+              break;
+            case AuthStatus.NOT_LOGGED_IN:
+              break;
+            case AuthStatus.LOGGED_IN:
+
+              break;
+            default:
+          }
+        }
 
         setState(() {
           _isLoading=false;
         });
 
-        if (userId != null && userId.length > 0 && _formMode == FormMode.LOGIN) {
-          //widget.onSignedIn();
-          widget.authenticator.authStatus=AuthStatus.LOGGED_IN;
-          print("authenticator status: logged in");
-        }
 
       } catch (e) {
         print('Error: $e');
@@ -89,7 +104,6 @@ class _LoginSignUpPageState extends State<LoginSignUpPage> {
 
 
   void _resendVerifyEmail(){
-    widget.authenticator.sendEmailVerification();
     _showVerifyEmailSentDialog();
   }
 
@@ -114,7 +128,7 @@ class _LoginSignUpPageState extends State<LoginSignUpPage> {
     );
   }
 
-  void _showVerifyEmailDialog() {
+  void _showResendVerifyEmailDialog() {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -146,6 +160,7 @@ class _LoginSignUpPageState extends State<LoginSignUpPage> {
   void initState() {
     _errorMessage = "";
     _isLoading = false;
+
     super.initState();
   }
 

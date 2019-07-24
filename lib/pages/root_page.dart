@@ -1,47 +1,45 @@
 import 'package:flutter/material.dart';
+
 import 'package:srl001/pages/login_signup_page.dart';
 import 'package:srl001/services/authentication.dart';
-import 'package:srl001/pages/home_page.dart';
 import 'package:srl001/pages/home.dart';
 
 class RootPage extends StatefulWidget {
-  RootPage({this.authenticator});
-
-  final Authenticator authenticator;
-
   @override
   State<StatefulWidget> createState() => new _RootPageState();
 }
 
 class _RootPageState extends State<RootPage> {
-  Authenticator auth;
+  Authenticator _authenticator;
+
   @override
   void initState() {
     super.initState();
-    auth = widget.authenticator;
-    auth.authStatus = AuthStatus.NOT_DETERMINED;
-    auth.userId = "";
-    auth.getCurrentUser().then((user) {
-      setState(() {
-        if (user != null) {
-         auth.userId = user?.uid;
-        }
-        auth.authStatus =
-            user?.uid == null ? AuthStatus.NOT_LOGGED_IN : AuthStatus.LOGGED_IN;
-        auth.userId=user.uid.toString();
-      });
-    });
+    _authenticator = new Authenticator();
+    _authenticator.checkAuthStatus().then((status) => setState((){}));
   }
 
-  void _onLoggedIn() {
-    auth.getCurrentUser().then((user) {
-      setState(() {
-        auth.userId = user.uid.toString();
-        auth.authStatus = AuthStatus.LOGGED_IN;
-      });
+  Future<AuthStatus> _onUserLogin({String email, String password}) async {
+    AuthStatus authStatus = await _authenticator.signIn(email, password);
+    setState(() {
     });
+    return authStatus;
   }
 
+  Future<AuthStatus> _onUserSignUp({String email, String password}) async {
+    AuthStatus authStatus = await _authenticator.signUp(email, password);
+    setState(() {
+
+    });
+    return authStatus;
+  }
+
+  void _onSignOut() async {
+    await _authenticator.signOut();
+    setState(() {
+      //authentication status has changed; rebuild screen
+    });
+  }
 
   Widget _buildWaitingScreen() {
     return Scaffold(
@@ -54,30 +52,27 @@ class _RootPageState extends State<RootPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Home();
-//    switch (auth.authStatus) {
-//      case AuthStatus.NOT_DETERMINED:
-//        return _buildWaitingScreen();
-//        break;
-//      case AuthStatus.NOT_LOGGED_IN:
-//        return new LoginSignUpPage(
-//          authenticator: auth,
-//          rootPageState: this,
-//        );
-//        break;
-//      case AuthStatus.LOGGED_IN:
-//        if (auth.userId.length > 0 &&
-//            auth.userId != null) {
-//          //return new HomePage(
-//          //  authenticator: auth,
-//          //  rootPageState: this,
-//          //);
-//          return Home();
-//        } else
-//          return _buildWaitingScreen();
-//        break;
-//      default:
-//        return _buildWaitingScreen();
-//   }
+    switch (_authenticator.getStatus()) {
+      case AuthStatus.NOT_DETERMINED:
+        return _buildWaitingScreen();
+        break;
+      case AuthStatus.NOT_LOGGED_IN:
+        return new LoginSignUpPage(
+            onLogin: _onUserLogin,
+            onSignup: _onUserSignUp
+        );
+        break;
+      case AuthStatus.LOGGED_IN:
+        return Home(onSignOut: _onSignOut);
+        break;
+      case AuthStatus.SIGNED_UP:
+        return new LoginSignUpPage(
+            onLogin: _onUserLogin,
+            onSignup: _onUserSignUp
+        );
+        break;
+      default:
+        return _buildWaitingScreen();
+    }
   }
 }

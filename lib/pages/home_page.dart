@@ -66,8 +66,8 @@ class _HomePageState extends State<HomePage> {
     try {
       await widget.authenticator.signOut();
       widget.rootPageState.setState(() {
-        var s = widget.authenticator.authStatus.toString()+' '+widget.authenticator.userId;
-        print(" signed out: auth.status: $s");
+
+
       });
 
     } catch (e) {

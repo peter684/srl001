@@ -1,3 +1,0 @@
-class email_verifier {
-
-}
